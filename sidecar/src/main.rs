@@ -23,6 +23,10 @@ impl LanguageServer for Backend {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
+                execute_command_provider: Some(ExecuteCommandOptions {
+                    commands: vec!["zed-restclient::send_request".to_string()],
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
             ..Default::default()
@@ -33,6 +37,23 @@ impl LanguageServer for Backend {
         self.client
             .log_message(MessageType::INFO, "Zed REST Client Sidecar initialized.")
             .await;
+    }
+
+    async fn execute_command(
+        &self,
+        params: ExecuteCommandParams,
+    ) -> Result<Option<serde_json::Value>> {
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!(
+                    "Executing command: {} with args: {:?}",
+                    params.command, params.arguments
+                ),
+            )
+            .await;
+        // Später werden wir hier reqwest einbauen und die echte Anfrage verschicken!
+        Ok(None)
     }
 
     async fn shutdown(&self) -> Result<()> {
