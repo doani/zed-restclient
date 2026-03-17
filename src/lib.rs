@@ -20,3 +20,20 @@ impl zed::Extension for RestClientExtension {
 }
 
 zed::register_extension!(RestClientExtension);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    // Configure wasm-bindgen-test to run in Node.js or browser
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    fn test_extension_initialization() {
+        // Dummy test to ensure the extension struct can be instantiated.
+        let _ext = <RestClientExtension as zed::Extension>::new();
+        // Since `Extension` trait isn't bringing methods directly to `ext` that we can easily assert on without a worktree,
+        // we just check that the initialization itself doesn't panic.
+    }
+}
