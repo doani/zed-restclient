@@ -16,8 +16,23 @@ impl zed::Extension for RestClientExtension {
         _language_server_id: &zed::LanguageServerId,
         _worktree: &zed::Worktree,
     ) -> zed::Result<zed::Command> {
-        // Zukünftiger Einstiegspunkt für das native Sidecar (Backend)
-        Err("Language Server ist noch nicht implementiert".to_string())
+        // Für die lokale Entwicklung nutzen wir einfach "cargo run" auf dem Sidecar-Crate.
+        // In einer finalen Version würde die Extension das Binary von GitHub Releases herunterladen
+        // und den Pfad zur ausführbaren Datei zurückgeben.
+        let manifest_path =
+            "/home/dr/s3solutions/zed-rest-client-root/zed-restclient/sidecar/Cargo.toml";
+
+        Ok(zed::Command {
+            command: "cargo".to_string(),
+            args: vec![
+                "run".to_string(),
+                "--manifest-path".to_string(),
+                manifest_path.to_string(),
+                "--bin".to_string(),
+                "sidecar".to_string(),
+            ],
+            env: vec![],
+        })
     }
 }
 
