@@ -92,27 +92,22 @@ impl LanguageServer for Backend {
 
         if let Some(text) = self.document_map.read().await.get(&uri) {
             let start_lines = codelens::find_request_starts(text);
-
+            
             // Check if the cursor is near any request start
             let cursor_line = params.range.start.line as usize;
-
-            // Allow the lightbulb to appear if the cursor is within the request block (roughly 15 lines max, or just any block)
-            if start_lines
-                .iter()
-                .any(|&line_idx| cursor_line >= line_idx && cursor_line <= line_idx + 20)
-            {
+            
+            // Allow the lightbulb to appear if the cursor is within the request block (roughly 20 lines max, or just any block)
+            if start_lines.iter().any(|marker| cursor_line >= marker.display_line && cursor_line <= marker.display_line + 20) {
                 // Find the specific request block the user is in
-                if let Some(&closest_line) =
-                    start_lines.iter().filter(|&&l| l <= cursor_line).last()
-                {
+                if let Some(closest_marker) = start_lines.iter().filter(|m| m.display_line <= cursor_line).last() {
                     actions.push(CodeActionOrCommand::CodeAction(CodeAction {
                         title: "▶ Send HTTP Request".to_string(),
-                        kind: Some(CodeActionKind::new("source".to_string())),
+                        kind: Some(CodeActionKind::new("source")),
                         command: Some(Command {
                             title: "▶ Send Request".to_string(),
                             command: "zed-restclient::send_request".to_string(),
                             arguments: Some(vec![serde_json::Value::Number(
-                                serde_json::Number::from(closest_line),
+                                serde_json::Number::from(closest_marker.block_index),
                             )]),
                         }),
                         ..Default::default()
@@ -120,7 +115,7 @@ impl LanguageServer for Backend {
                 }
             }
         }
-
+        
         Ok(Some(actions))
     }
 
@@ -132,14 +127,14 @@ impl LanguageServer for Backend {
         if let Some(text) = self.document_map.read().await.get(&uri) {
             let start_lines = codelens::find_request_starts(text);
 
-            for line_idx in start_lines {
+            for marker in start_lines {
                 let position_start = Position {
-                    line: line_idx as u32,
+                    line: marker.display_line as u32,
                     character: 0,
                 };
                 // Make the range span to character 100 so Zed realizes it covers text
                 let position_end = Position {
-                    line: line_idx as u32,
+                    line: marker.display_line as u32,
                     character: 100,
                 };
 
@@ -152,7 +147,7 @@ impl LanguageServer for Backend {
                         title: "▶ Send Request".to_string(),
                         command: "zed-restclient::send_request".to_string(),
                         arguments: Some(vec![serde_json::Value::Number(serde_json::Number::from(
-                            line_idx,
+                            marker.block_index,
                         ))]),
                     }),
                     data: None,
