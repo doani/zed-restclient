@@ -1,5 +1,7 @@
 use zed_extension_api as zed;
 
+mod parser;
+
 struct RestClientExtension {
     // Hier können wir später den Zustand (z.B. Cached Variables oder den LSP Path) verwalten
 }
