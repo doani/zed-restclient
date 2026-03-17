@@ -5,3 +5,7 @@ schema_version = 1
 authors = ["Daniel Roisch"]
 description = "A REST Client for Zed, inspired by vscode-restclient."
 repository = "https://github.com/doani/zed-restclient"
+
+[language_servers.zed-restclient]
+name = "Zed REST Client Sidecar"
+language = "HTTP"

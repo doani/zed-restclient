@@ -23,9 +23,10 @@ impl zed::Extension for RestClientExtension {
             "/home/dr/s3solutions/zed-rest-client-root/zed-restclient/sidecar/Cargo.toml";
 
         Ok(zed::Command {
-            command: "cargo".to_string(),
+            command: "/usr/bin/cargo".to_string(),
             args: vec![
                 "run".to_string(),
+                "-q".to_string(),
                 "--manifest-path".to_string(),
                 manifest_path.to_string(),
                 "--bin".to_string(),
