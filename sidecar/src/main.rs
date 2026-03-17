@@ -101,7 +101,7 @@ impl LanguageServer for Backend {
                 // Find the specific request block the user is in
                 if let Some(closest_marker) = start_lines.iter().filter(|m| m.display_line <= cursor_line).last() {
                     actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                        title: "▶ Send HTTP Request".to_string(),
+                        title: "▶ Send Request".to_string(),
                         kind: Some(CodeActionKind::new("source")),
                         command: Some(Command {
                             title: "▶ Send Request".to_string(),
