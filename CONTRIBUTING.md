@@ -18,5 +18,37 @@ If you are modifying network logic, look at the sidecar codebase. If you are mod
 3. **Tests:** Ensure you write tests for your changes. Run `cargo test` and `cargo fmt` before submitting a PR.
 4. **Branches:** Prefix your branches appropriately (`feat/`, `fix/`, `docs/`).
 
-## Local Setup
-*(To be expanded once the scaffolding is finalized in Epic 1)*
+## Local Setup & Development
+
+To run and test the extension locally within the Zed Editor:
+
+1. **Install Prerequisites:**
+   Make sure you have Rust installed. You must also add the WASM target:
+   
+   If you installed Rust via **rustup** (recommended):
+   ```bash
+   rustup target add wasm32-wasip1
+   ```
+   
+   If you installed Rust via your system's package manager (e.g., Arch Linux/CachyOS `pacman`):
+   ```bash
+   sudo pacman -S rust-wasm
+   ```
+
+2. **Load the Dev Extension in Zed:**
+   - Open your Zed Editor.
+   - Open the Command Palette (`cmd-shift-p` on Mac or `ctrl-shift-p` on Linux/Windows).
+   - Search for the command: `zed: extensions` and hit Enter.
+   - In the Extensions panel, click on the **Install Dev Extension** button.
+   - Select the root folder of this repository (`zed-restclient`).
+   
+3. **Verify it Works:**
+   - Zed will automatically compile the WASM extension using `cargo build --target wasm32-wasip1` in the background and load it.
+   - Create a new file with the extension `.http` (e.g., `test.http`).
+   - Type a simple request:
+     ```http
+     GET https://api.github.com
+     ```
+   - You should see the **▶ Send Request** Code Lens appear above the `GET` line!
+   
+*Note: During active development, if you change the Rust code of the extension or the sidecar, you need to open the Extensions panel in Zed and click **Reload** on the Dev Extension to compile and apply the changes.*
