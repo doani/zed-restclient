@@ -1,0 +1,8 @@
+[
+  {
+    "label": "Send HTTP Request",
+    "command": "cargo run -q --manifest-path $ZED_DIRNAME/sidecar/Cargo.toml --bin sidecar -- send-request \"$ZED_FILE\" $ZED_ROW",
+    "tags": ["my-custom-run-tag", "http-request"],
+    "use_new_terminal": false
+  }
+]
