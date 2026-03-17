@@ -20,6 +20,7 @@ impl LanguageServer for Backend {
                 code_lens_provider: Some(CodeLensOptions {
                     resolve_provider: Some(false),
                 }),
+                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
@@ -85,6 +86,44 @@ impl LanguageServer for Backend {
             .remove(&params.text_document.uri);
     }
 
+    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+        let uri = params.text_document.uri;
+        let mut actions = Vec::new();
+
+        if let Some(text) = self.document_map.read().await.get(&uri) {
+            let start_lines = codelens::find_request_starts(text);
+
+            // Check if the cursor is near any request start
+            let cursor_line = params.range.start.line as usize;
+
+            // Allow the lightbulb to appear if the cursor is within the request block (roughly 15 lines max, or just any block)
+            if start_lines
+                .iter()
+                .any(|&line_idx| cursor_line >= line_idx && cursor_line <= line_idx + 20)
+            {
+                // Find the specific request block the user is in
+                if let Some(&closest_line) =
+                    start_lines.iter().filter(|&&l| l <= cursor_line).last()
+                {
+                    actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                        title: "▶ Send HTTP Request".to_string(),
+                        kind: Some(CodeActionKind::new("source".to_string())),
+                        command: Some(Command {
+                            title: "▶ Send Request".to_string(),
+                            command: "zed-restclient::send_request".to_string(),
+                            arguments: Some(vec![serde_json::Value::Number(
+                                serde_json::Number::from(closest_line),
+                            )]),
+                        }),
+                        ..Default::default()
+                    }));
+                }
+            }
+        }
+
+        Ok(Some(actions))
+    }
+
     async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
         let uri = params.text_document.uri;
 
@@ -94,15 +133,20 @@ impl LanguageServer for Backend {
             let start_lines = codelens::find_request_starts(text);
 
             for line_idx in start_lines {
-                let position = Position {
+                let position_start = Position {
                     line: line_idx as u32,
                     character: 0,
+                };
+                // Make the range span to character 100 so Zed realizes it covers text
+                let position_end = Position {
+                    line: line_idx as u32,
+                    character: 100,
                 };
 
                 lenses.push(CodeLens {
                     range: Range {
-                        start: position,
-                        end: position,
+                        start: position_start,
+                        end: position_end,
                     },
                     command: Some(Command {
                         title: "▶ Send Request".to_string(),
