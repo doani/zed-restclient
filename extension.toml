@@ -6,6 +6,10 @@ authors = ["Daniel Roisch"]
 description = "A REST Client for Zed, inspired by vscode-restclient."
 repository = "https://github.com/doani/zed-restclient"
 
+[grammars.http]
+repository = "https://github.com/rest-nvim/tree-sitter-http"
+commit = "d227b6863ce95ad5935e405a3bdf0ba1396aabf1"
+
 [language_servers.zed-restclient]
 name = "Zed REST Client Sidecar"
 language = "HTTP"
