@@ -1,58 +1,66 @@
-use anyhow::{Context, Result};
-use std::io::{self, BufRead, Read, Write};
+use tower_lsp::jsonrpc::Result;
+use tower_lsp::lsp_types::*;
+use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-fn main() -> Result<()> {
-    // Log message to stderr so it doesn't interfere with the stdout JSON-RPC communication
-    eprintln!("Zed REST Client Sidecar started.");
+mod codelens;
 
-    let mut stdin = io::stdin().lock();
-    let mut stdout = io::stdout().lock();
+#[derive(Debug)]
+struct Backend {
+    client: Client,
+}
 
-    loop {
-        let mut header_buf = String::new();
-        // Read headers one by one. The first one is usually Content-Length.
-        if stdin.read_line(&mut header_buf)? == 0 {
-            // EOF reached, meaning the parent process (Zed) closed the connection
-            break;
-        }
-
-        let header = header_buf.trim();
-        if header.is_empty() {
-            // Empty line between headers and body, skip it
-            continue;
-        }
-
-        if let Some(len_str) = header.strip_prefix("Content-Length: ") {
-            let len: usize = len_str.parse().context("Invalid Content-Length")?;
-
-            // Read the mandatory empty line (\r\n) before the body
-            let mut empty_line = String::new();
-            stdin.read_line(&mut empty_line)?;
-
-            // Read the actual JSON-RPC body based on the Content-Length
-            let mut body = vec![0; len];
-            stdin.read_exact(&mut body)?;
-
-            let msg = String::from_utf8_lossy(&body);
-            eprintln!("Sidecar received RPC message: {}", msg);
-
-            // Send a Mock response back to the Zed Extension
-            // In future Sprints, we will parse this message and execute a real HTTP request
-            let response = r#"{"jsonrpc":"2.0","result":"mock_response","id":1}"#;
-
-            // Format according to LSP standard: Content-Length header, empty line, JSON body
-            write!(
-                stdout,
-                "Content-Length: {}\r\n\r\n{}",
-                response.len(),
-                response
-            )?;
-
-            // Ensure the data is actually sent out immediately
-            stdout.flush()?;
-        }
+#[tower_lsp::async_trait]
+impl LanguageServer for Backend {
+    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+        Ok(InitializeResult {
+            capabilities: ServerCapabilities {
+                // We tell the editor that we support Code Lenses
+                code_lens_provider: Some(CodeLensOptions {
+                    resolve_provider: Some(false),
+                }),
+                // We want to be notified when the document changes (to update lenses)
+                text_document_sync: Some(TextDocumentSyncCapability::Kind(
+                    TextDocumentSyncKind::FULL,
+                )),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
     }
 
-    eprintln!("Zed REST Client Sidecar shutting down.");
-    Ok(())
+    async fn initialized(&self, _: InitializedParams) {
+        self.client
+            .log_message(MessageType::INFO, "Zed REST Client Sidecar initialized.")
+            .await;
+    }
+
+    async fn shutdown(&self) -> Result<()> {
+        Ok(())
+    }
+
+    async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        // In the future, we might store the document content here to provide code lenses
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!("Opened file: {}", params.text_document.uri),
+            )
+            .await;
+    }
+
+    async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
+        // For now, we return an empty list.
+        // In the next step, we will use our `codelens::find_request_starts` function
+        // to parse the current document content and return real Code Lenses.
+        Ok(Some(vec![]))
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let stdin = tokio::io::stdin();
+    let stdout = tokio::io::stdout();
+
+    let (service, socket) = LspService::new(|client| Backend { client });
+    Server::new(stdin, stdout, socket).serve(service).await;
 }
