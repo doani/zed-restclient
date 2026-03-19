@@ -92,30 +92,28 @@ impl LanguageServer for Backend {
 
         if let Some(text) = self.document_map.read().await.get(&uri) {
             let start_lines = codelens::find_request_starts(text);
-            
+
             // Check if the cursor is near any request start
             let cursor_line = params.range.start.line as usize;
-            
-            // Allow the lightbulb to appear if the cursor is within the request block (roughly 20 lines max, or just any block)
-            if start_lines.iter().any(|marker| cursor_line >= marker.display_line && cursor_line <= marker.display_line + 20) {
-                // Find the specific request block the user is in
-                if let Some(closest_marker) = start_lines.iter().filter(|m| m.display_line <= cursor_line).last() {
-                    actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+
+            // Allow the lightbulb to appear ONLY if the cursor is EXACTLY on the request line
+            if let Some(closest_marker) = start_lines.iter().find(|m| m.display_line == cursor_line)
+            {
+                actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                    title: "▶ Send Request".to_string(),
+                    kind: Some(CodeActionKind::new("source")),
+                    command: Some(Command {
                         title: "▶ Send Request".to_string(),
-                        kind: Some(CodeActionKind::new("source")),
-                        command: Some(Command {
-                            title: "▶ Send Request".to_string(),
-                            command: "zed-restclient::send_request".to_string(),
-                            arguments: Some(vec![serde_json::Value::Number(
-                                serde_json::Number::from(closest_marker.block_index),
-                            )]),
-                        }),
-                        ..Default::default()
-                    }));
-                }
+                        command: "zed-restclient::send_request".to_string(),
+                        arguments: Some(vec![serde_json::Value::Number(serde_json::Number::from(
+                            closest_marker.block_index,
+                        ))]),
+                    }),
+                    ..Default::default()
+                }));
             }
         }
-        
+
         Ok(Some(actions))
     }
 

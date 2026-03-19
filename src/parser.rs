@@ -10,75 +10,114 @@ pub struct HttpRequest<'a> {
 #[allow(dead_code)]
 pub fn parse_http_file(content: &str) -> Vec<HttpRequest<'_>> {
     let mut requests = Vec::new();
+    let mut looking_for_request = true;
 
-    // Split the file by the standard `###` delimiter used in .http files
-    let blocks = content.split("###");
+    let mut current_method = "GET";
+    let mut current_url = "";
+    let mut current_headers = Vec::new();
+    let mut parsing_body = false;
+    let mut body_start_idx = None;
+    let mut body_end_idx = None;
 
-    for block in blocks {
-        let block = block.trim();
-        if block.is_empty() {
+    let content_ptr = content.as_ptr() as usize;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        if trimmed.starts_with("###") {
+            // Separator found. Finish the current request if we were building one.
+            if !looking_for_request && !current_url.is_empty() {
+                let body = if let (Some(s), Some(e)) = (body_start_idx, body_end_idx) {
+                    if s <= e && s < content.len() {
+                        let b = &content[s..e];
+                        if b.trim().is_empty() { None } else { Some(b.trim_end()) }
+                    } else { None }
+                } else { None };
+
+                requests.push(HttpRequest {
+                    method: current_method,
+                    url: current_url,
+                    headers: current_headers.clone(),
+                    body,
+                });
+            }
+            
+            // Reset state for the next request
+            looking_for_request = true;
+            current_method = "GET";
+            current_url = "";
+            current_headers.clear();
+            parsing_body = false;
+            body_start_idx = None;
+            body_end_idx = None;
             continue;
         }
 
-        let mut lines = block.lines();
-        let mut method = "GET"; // Default method
-        let mut url = "";
-
-        // Find the first non-empty line (ignoring comments starting with # or //)
-        for line in lines.by_ref() {
-            let line = line.trim();
-            if line.is_empty() || line.starts_with('#') || line.starts_with("//") {
+        if looking_for_request {
+            if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with("//") {
                 continue;
             }
 
-            // The first valid line is the Request Line (Method URL HTTP/Version)
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() >= 2 {
-                method = parts[0];
-                url = parts[1];
-            } else if parts.len() == 1 {
-                url = parts[0];
-            }
-            break;
-        }
-
-        if url.is_empty() {
-            continue; // Invalid request block
-        }
-
-        let mut headers = Vec::new();
-        let mut body_lines = Vec::new();
-        let mut parsing_body = false;
-
-        for line in lines {
-            if parsing_body {
-                body_lines.push(line);
-            } else {
-                let trimmed = line.trim();
-                if trimmed.is_empty() {
-                    // An empty line separates headers from the body
-                    parsing_body = true;
-                } else if trimmed.starts_with('#') || trimmed.starts_with("//") {
-                    // Skip comments in header section
-                    continue;
-                } else if let Some((key, value)) = trimmed.split_once(':') {
-                    headers.push((key.trim(), value.trim()));
+            // We found the request line!
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if !parts.is_empty() {
+                if parts.len() >= 2 {
+                    current_method = parts[0];
+                    current_url = parts[1];
+                } else {
+                    current_method = "GET";
+                    current_url = parts[0];
                 }
+                looking_for_request = false;
             }
+            continue;
         }
 
-        let body = if body_lines.is_empty() {
-            None
+        // If we are not looking for a request, we are parsing headers or body
+        let line_end_ptr = line.as_ptr() as usize - content_ptr + line.len();
+
+        if parsing_body {
+            // Just update the end index of the body
+            body_end_idx = Some(line_end_ptr);
         } else {
-            // Reconstruct body and trim trailing/leading whitespace from the whole block,
-            // but preserve internal formatting
-            Some(block[block.find(body_lines[0]).unwrap()..].trim_end())
-        };
+            if trimmed.is_empty() {
+                // Empty line separates headers from body
+                parsing_body = true;
+                // The body starts after this empty line
+                let start_ptr = line.as_ptr() as usize - content_ptr + line.len();
+                // Check if there is a newline character to skip
+                let actual_start = if start_ptr < content.len() && content[start_ptr..].starts_with('\n') {
+                    start_ptr + 1
+                } else if start_ptr + 1 < content.len() && content[start_ptr..].starts_with("\r\n") {
+                    start_ptr + 2
+                } else {
+                    start_ptr
+                };
+
+                body_start_idx = Some(actual_start);
+                body_end_idx = Some(actual_start);
+            } else if trimmed.starts_with('#') || trimmed.starts_with("//") {
+                // Ignore comments in headers
+                continue;
+            } else if let Some((key, value)) = trimmed.split_once(':') {
+                current_headers.push((key.trim(), value.trim()));
+            }
+        }
+    }
+
+    // Push the final request if there is one
+    if !looking_for_request && !current_url.is_empty() {
+        let body = if let (Some(s), Some(e)) = (body_start_idx, body_end_idx) {
+            if s <= e && s < content.len() {
+                let b = &content[s..e];
+                if b.trim().is_empty() { None } else { Some(b.trim_end()) }
+            } else { None }
+        } else { None };
 
         requests.push(HttpRequest {
-            method,
-            url,
-            headers,
+            method: current_method,
+            url: current_url,
+            headers: current_headers,
             body,
         });
     }
