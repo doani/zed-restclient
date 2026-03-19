@@ -20,7 +20,6 @@ impl LanguageServer for Backend {
                 code_lens_provider: Some(CodeLensOptions {
                     resolve_provider: Some(false),
                 }),
-                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
@@ -84,37 +83,6 @@ impl LanguageServer for Backend {
             .write()
             .await
             .remove(&params.text_document.uri);
-    }
-
-    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
-        let uri = params.text_document.uri;
-        let mut actions = Vec::new();
-
-        if let Some(text) = self.document_map.read().await.get(&uri) {
-            let start_lines = codelens::find_request_starts(text);
-
-            // Check if the cursor is near any request start
-            let cursor_line = params.range.start.line as usize;
-
-            // Allow the lightbulb to appear ONLY if the cursor is EXACTLY on the request line
-            if let Some(closest_marker) = start_lines.iter().find(|m| m.display_line == cursor_line)
-            {
-                actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                    title: "▶ Send Request".to_string(),
-                    kind: Some(CodeActionKind::new("source")),
-                    command: Some(Command {
-                        title: "▶ Send Request".to_string(),
-                        command: "zed-restclient::send_request".to_string(),
-                        arguments: Some(vec![serde_json::Value::Number(serde_json::Number::from(
-                            closest_marker.block_index,
-                        ))]),
-                    }),
-                    ..Default::default()
-                }));
-            }
-        }
-
-        Ok(Some(actions))
     }
 
     async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
