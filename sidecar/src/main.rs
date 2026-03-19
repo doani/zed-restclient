@@ -5,6 +5,8 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 mod codelens;
+mod http_client;
+mod parser;
 
 #[derive(Debug)]
 struct Backend {
@@ -43,16 +45,16 @@ impl LanguageServer for Backend {
         &self,
         params: ExecuteCommandParams,
     ) -> Result<Option<serde_json::Value>> {
-        self.client
-            .log_message(
-                MessageType::INFO,
-                format!(
-                    "Executing command: {} with args: {:?}",
-                    params.command, params.arguments
-                ),
-            )
-            .await;
-        // Später werden wir hier reqwest einbauen und die echte Anfrage verschicken!
+        if params.command == "zed-restclient::send_request" {
+            if let Err(e) = self
+                .handle_send_request(params.arguments)
+                .await
+            {
+                self.client
+                    .log_message(MessageType::ERROR, format!("Error: {}", e))
+                    .await;
+            }
+        }
         Ok(None)
     }
 
@@ -112,9 +114,10 @@ impl LanguageServer for Backend {
                     command: Some(Command {
                         title: "▶ Send Request".to_string(),
                         command: "zed-restclient::send_request".to_string(),
-                        arguments: Some(vec![serde_json::Value::Number(serde_json::Number::from(
-                            marker.block_index,
-                        ))]),
+                        arguments: Some(vec![
+                            serde_json::Value::String(uri.to_string()),
+                            serde_json::Value::Number(serde_json::Number::from(marker.block_index)),
+                        ]),
                     }),
                     data: None,
                 });
@@ -122,6 +125,58 @@ impl LanguageServer for Backend {
         }
 
         Ok(Some(lenses))
+    }
+}
+
+impl Backend {
+    async fn handle_send_request(&self, args: Vec<serde_json::Value>) -> anyhow::Result<()> {
+        if args.len() < 2 {
+            anyhow::bail!("Invalid arguments for send_request. Expected URI and block index.");
+        }
+
+        let uri_str = args[0]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Expected URI as first argument"))?;
+        let block_idx = args[1]
+            .as_u64()
+            .ok_or_else(|| anyhow::anyhow!("Expected block index as second argument"))?
+            as usize;
+
+        let uri = Url::parse(uri_str)?;
+        let text = {
+            let map = self.document_map.read().await;
+            map.get(&uri)
+                .ok_or_else(|| anyhow::anyhow!("Document not found in memory"))?
+                .clone()
+        };
+
+        let requests = parser::parse_http_file(&text);
+        let req = requests
+            .get(block_idx)
+            .ok_or_else(|| anyhow::anyhow!("Request block not found at index {}", block_idx))?;
+
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!("Sending {} request to {}", req.method, req.url),
+            )
+            .await;
+
+        let http_client = reqwest::Client::new();
+        let reqwest_req = http_client::build_request(&http_client, req)?;
+
+        let response = http_client.execute(reqwest_req).await?;
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!("Response Status: {}\nBody:\n{}", status, body),
+            )
+            .await;
+
+        Ok(())
     }
 }
 
