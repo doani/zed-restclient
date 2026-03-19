@@ -30,9 +30,17 @@ pub fn parse_http_file(content: &str) -> Vec<HttpRequest<'_>> {
                 let body = if let (Some(s), Some(e)) = (body_start_idx, body_end_idx) {
                     if s <= e && s < content.len() {
                         let b = &content[s..e];
-                        if b.trim().is_empty() { None } else { Some(b.trim_end()) }
-                    } else { None }
-                } else { None };
+                        if b.trim().is_empty() {
+                            None
+                        } else {
+                            Some(b.trim_end())
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
 
                 requests.push(HttpRequest {
                     method: current_method,
@@ -41,7 +49,7 @@ pub fn parse_http_file(content: &str) -> Vec<HttpRequest<'_>> {
                     body,
                 });
             }
-            
+
             // Reset state for the next request
             looking_for_request = true;
             current_method = "GET";
@@ -86,9 +94,12 @@ pub fn parse_http_file(content: &str) -> Vec<HttpRequest<'_>> {
                 // The body starts after this empty line
                 let start_ptr = line.as_ptr() as usize - content_ptr + line.len();
                 // Check if there is a newline character to skip
-                let actual_start = if start_ptr < content.len() && content[start_ptr..].starts_with('\n') {
+                let actual_start = if start_ptr < content.len()
+                    && content[start_ptr..].starts_with('\n')
+                {
                     start_ptr + 1
-                } else if start_ptr + 1 < content.len() && content[start_ptr..].starts_with("\r\n") {
+                } else if start_ptr + 1 < content.len() && content[start_ptr..].starts_with("\r\n")
+                {
                     start_ptr + 2
                 } else {
                     start_ptr
@@ -110,9 +121,17 @@ pub fn parse_http_file(content: &str) -> Vec<HttpRequest<'_>> {
         let body = if let (Some(s), Some(e)) = (body_start_idx, body_end_idx) {
             if s <= e && s < content.len() {
                 let b = &content[s..e];
-                if b.trim().is_empty() { None } else { Some(b.trim_end()) }
-            } else { None }
-        } else { None };
+                if b.trim().is_empty() {
+                    None
+                } else {
+                    Some(b.trim_end())
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         requests.push(HttpRequest {
             method: current_method,

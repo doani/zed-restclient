@@ -7,7 +7,7 @@ pub struct RequestMarker {
 pub fn find_request_starts(content: &str) -> Vec<RequestMarker> {
     let mut markers = Vec::new();
     let mut block_index = 0;
-    
+
     // By default, the start of the file acts as an implicit separator
     let mut looking_for_request = true;
 
@@ -20,8 +20,8 @@ pub fn find_request_starts(content: &str) -> Vec<RequestMarker> {
             // If we are already looking for a request, we just continue looking.
             // If we found one, we start looking for the NEXT one.
             looking_for_request = true;
-            
-            // If the separator has text right after it, like "### GET http...", 
+
+            // If the separator has text right after it, like "### GET http...",
             // the user might have put the request ON the separator line.
             // Standard .http format says "###" must be on its own line (or followed by comments).
             // We ignore whatever is on the "###" line itself as it's a separator/comment.
