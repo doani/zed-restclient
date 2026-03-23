@@ -46,10 +46,7 @@ impl LanguageServer for Backend {
         params: ExecuteCommandParams,
     ) -> Result<Option<serde_json::Value>> {
         if params.command == "zed-restclient::send_request" {
-            if let Err(e) = self
-                .handle_send_request(params.arguments)
-                .await
-            {
+            if let Err(e) = self.handle_send_request(params.arguments).await {
                 self.client
                     .log_message(MessageType::ERROR, format!("Error: {}", e))
                     .await;
@@ -167,14 +164,71 @@ impl Backend {
 
         let response = http_client.execute(reqwest_req).await?;
         let status = response.status();
+        let headers = response.headers().clone();
         let body = response.text().await.unwrap_or_default();
+
+        let mut response_text = format!("HTTP/1.1 {}\n", status);
+        for (name, value) in headers.iter() {
+            let v = value.to_str().unwrap_or("[invalid header value]");
+            response_text.push_str(&format!("{}: {}\n", name, v));
+        }
+        response_text.push_str("\n");
+        response_text.push_str(&body);
 
         self.client
             .log_message(
                 MessageType::INFO,
-                format!("Response Status: {}\nBody:\n{}", status, body),
+                format!(
+                    "Received response for {}, length: {}",
+                    uri_str,
+                    response_text.len()
+                ),
             )
             .await;
+
+        let temp_dir = std::env::temp_dir();
+        let file_path = temp_dir.join("zed_restclient_response.http");
+        tokio::fs::write(&file_path, response_text).await?;
+
+        if let Ok(url) = Url::from_file_path(&file_path) {
+            let result = self
+                .client
+                .show_document(ShowDocumentParams {
+                    uri: url,
+                    external: Some(false),
+                    take_focus: Some(true),
+                    selection: None,
+                })
+                .await;
+
+            if result.is_err() {
+                // Fallback for older Zed versions or if window/showDocument is not supported
+                let path_str = file_path.to_string_lossy();
+                let opened = ["zeditor", "zed", "zed-preview", "zed-nightly"]
+                    .iter()
+                    .any(|cmd| {
+                        std::process::Command::new(cmd)
+                            .arg(path_str.as_ref())
+                            .spawn()
+                            .is_ok()
+                    });
+
+                if !opened {
+                    #[cfg(target_os = "macos")]
+                    let _ = std::process::Command::new("open")
+                        .arg(path_str.as_ref())
+                        .spawn();
+                    #[cfg(target_os = "linux")]
+                    let _ = std::process::Command::new("xdg-open")
+                        .arg(path_str.as_ref())
+                        .spawn();
+                    #[cfg(target_os = "windows")]
+                    let _ = std::process::Command::new("cmd")
+                        .args(["/C", "start", path_str.as_ref()])
+                        .spawn();
+                }
+            }
+        }
 
         Ok(())
     }
