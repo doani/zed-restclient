@@ -1,2 +1,9 @@
 /target
 grammars/
+
+# Agent & Project Planning
+project-planning/
+GEMINI.md
+llms.txt
+llms-full.txt
+
