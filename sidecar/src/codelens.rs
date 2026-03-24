@@ -33,6 +33,11 @@ pub fn find_request_starts(content: &str) -> Vec<RequestMarker> {
                 continue;
             }
 
+            // Ignore variable definitions
+            if trimmed.starts_with('@') {
+                continue;
+            }
+
             // This is the first valid line after a separator (or start of file)
             // It must be the request line (Method URL)
             let parts: Vec<&str> = trimmed.split_whitespace().collect();
@@ -80,5 +85,30 @@ Content-Type: application/json
         assert_eq!(lines.len(), 2);
         assert_eq!(lines[0].display_line, 2); // The first GET is on line 2
         assert_eq!(lines[1].display_line, 8); // The second GET is on line 8
+    }
+
+    #[test]
+    fn test_find_request_starts_with_variables() {
+        let content = "
+@baseUrl = https://api.example.com
+@token = supersecret
+
+GET {{baseUrl}}/users
+Authorization: Bearer {{token}}
+###
+@anotherVar = 123
+
+POST {{baseUrl}}/data
+";
+        let lines = find_request_starts(content);
+        assert_eq!(lines.len(), 2);
+        
+        // GET line (index 4 in 0-based array)
+        assert_eq!(lines[0].display_line, 4);
+        assert_eq!(lines[0].block_index, 0);
+
+        // POST line (index 9 in 0-based array)
+        assert_eq!(lines[1].display_line, 9);
+        assert_eq!(lines[1].block_index, 1);
     }
 }

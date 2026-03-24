@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub struct HttpRequest<'a> {
@@ -8,8 +10,16 @@ pub struct HttpRequest<'a> {
 }
 
 #[allow(dead_code)]
-pub fn parse_http_file(content: &str) -> Vec<HttpRequest<'_>> {
+#[derive(Debug, PartialEq)]
+pub struct HttpFile<'a> {
+    pub requests: Vec<HttpRequest<'a>>,
+    pub variables: HashMap<&'a str, &'a str>,
+}
+
+#[allow(dead_code)]
+pub fn parse_http_file(content: &str) -> HttpFile<'_> {
     let mut requests = Vec::new();
+    let mut variables = HashMap::new();
     let mut looking_for_request = true;
 
     let mut current_method = "GET";
@@ -65,6 +75,14 @@ pub fn parse_http_file(content: &str) -> Vec<HttpRequest<'_>> {
             if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with("//") {
                 continue;
             }
+
+            // Check for file variables
+            if trimmed.starts_with('@')
+                && let Some((name, value)) = trimmed.split_once('=') {
+                    // Extract variable name without the '@'
+                    variables.insert(name[1..].trim(), value.trim());
+                    continue;
+                }
 
             // We found the request line!
             let parts: Vec<&str> = trimmed.split_whitespace().collect();
@@ -141,7 +159,10 @@ pub fn parse_http_file(content: &str) -> Vec<HttpRequest<'_>> {
         });
     }
 
-    requests
+    HttpFile {
+        requests,
+        variables,
+    }
 }
 
 #[cfg(test)]
@@ -151,12 +172,13 @@ mod tests {
     #[test]
     fn test_parse_simple_get() {
         let content = "GET https://api.example.com/users";
-        let reqs = parse_http_file(content);
-        assert_eq!(reqs.len(), 1);
-        assert_eq!(reqs[0].method, "GET");
-        assert_eq!(reqs[0].url, "https://api.example.com/users");
-        assert!(reqs[0].headers.is_empty());
-        assert_eq!(reqs[0].body, None);
+        let file = parse_http_file(content);
+        assert_eq!(file.requests.len(), 1);
+        assert_eq!(file.requests[0].method, "GET");
+        assert_eq!(file.requests[0].url, "https://api.example.com/users");
+        assert!(file.requests[0].headers.is_empty());
+        assert_eq!(file.requests[0].body, None);
+        assert!(file.variables.is_empty());
     }
 
     #[test]
@@ -171,15 +193,15 @@ Authorization: Bearer token123
     "email": "john@example.com"
 }
 "#;
-        let reqs = parse_http_file(content);
-        assert_eq!(reqs.len(), 1);
-        assert_eq!(reqs[0].method, "POST");
-        assert_eq!(reqs[0].url, "https://api.example.com/users");
-        assert_eq!(reqs[0].headers.len(), 2);
-        assert_eq!(reqs[0].headers[0], ("Content-Type", "application/json"));
-        assert_eq!(reqs[0].headers[1], ("Authorization", "Bearer token123"));
+        let file = parse_http_file(content);
+        assert_eq!(file.requests.len(), 1);
+        assert_eq!(file.requests[0].method, "POST");
+        assert_eq!(file.requests[0].url, "https://api.example.com/users");
+        assert_eq!(file.requests[0].headers.len(), 2);
+        assert_eq!(file.requests[0].headers[0], ("Content-Type", "application/json"));
+        assert_eq!(file.requests[0].headers[1], ("Authorization", "Bearer token123"));
         assert_eq!(
-            reqs[0].body,
+            file.requests[0].body,
             Some("{\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\"\n}")
         );
     }
@@ -191,9 +213,26 @@ GET http://localhost:8080/1
 ###
 PUT http://localhost:8080/2
 "#;
-        let reqs = parse_http_file(content);
-        assert_eq!(reqs.len(), 2);
-        assert_eq!(reqs[0].method, "GET");
-        assert_eq!(reqs[1].method, "PUT");
+        let file = parse_http_file(content);
+        assert_eq!(file.requests.len(), 2);
+        assert_eq!(file.requests[0].method, "GET");
+        assert_eq!(file.requests[1].method, "PUT");
+    }
+
+    #[test]
+    fn test_parse_variables() {
+        let content = r#"
+@baseUrl = https://api.example.com
+@token = supersecret
+
+GET {{baseUrl}}/users
+Authorization: Bearer {{token}}
+"#;
+        let file = parse_http_file(content);
+        assert_eq!(file.requests.len(), 1);
+        assert_eq!(file.variables.len(), 2);
+        assert_eq!(file.variables.get("baseUrl"), Some(&"https://api.example.com"));
+        assert_eq!(file.variables.get("token"), Some(&"supersecret"));
+        assert_eq!(file.requests[0].url, "{{baseUrl}}/users");
     }
 }
