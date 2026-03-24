@@ -45,13 +45,12 @@ impl LanguageServer for Backend {
         &self,
         params: ExecuteCommandParams,
     ) -> Result<Option<serde_json::Value>> {
-        if params.command == "zed-restclient::send_request" {
-            if let Err(e) = self.handle_send_request(params.arguments).await {
+        if params.command == "zed-restclient::send_request"
+            && let Err(e) = self.handle_send_request(params.arguments).await {
                 self.client
                     .log_message(MessageType::ERROR, format!("Error: {}", e))
                     .await;
             }
-        }
         Ok(None)
     }
 
@@ -147,10 +146,15 @@ impl Backend {
                 .clone()
         };
 
-        let requests = parser::parse_http_file(&text);
-        let req = requests
-            .get(block_idx)
-            .ok_or_else(|| anyhow::anyhow!("Request block not found at index {}", block_idx))?;
+        let http_file = parser::parse_http_file(&text);
+        let req = match http_file.requests.get(block_idx) {
+            Some(r) => r,
+            None => {
+                let err_msg = format!("Request block not found at index {}", block_idx);
+                self.client.log_message(MessageType::ERROR, &err_msg).await;
+                return Err(anyhow::anyhow!(err_msg));
+            }
+        };
 
         self.client
             .log_message(
@@ -160,9 +164,24 @@ impl Backend {
             .await;
 
         let http_client = reqwest::Client::new();
-        let reqwest_req = http_client::build_request(&http_client, req)?;
+        let reqwest_req = match http_client::build_request(&http_client, req, &http_file.variables) {
+            Ok(r) => r,
+            Err(e) => {
+                let err_msg = format!("Failed to build request: {}", e);
+                self.client.log_message(MessageType::ERROR, &err_msg).await;
+                return Err(e);
+            }
+        };
 
-        let response = http_client.execute(reqwest_req).await?;
+        let response = match http_client.execute(reqwest_req).await {
+            Ok(res) => res,
+            Err(e) => {
+                let err_msg = format!("HTTP Request failed: {}", e);
+                self.client.log_message(MessageType::ERROR, &err_msg).await;
+                return Err(anyhow::anyhow!(err_msg));
+            }
+        };
+
         let status = response.status();
         let headers = response.headers().clone();
         let body = response.text().await.unwrap_or_default();
@@ -172,7 +191,7 @@ impl Backend {
             let v = value.to_str().unwrap_or("[invalid header value]");
             response_text.push_str(&format!("{}: {}\n", name, v));
         }
-        response_text.push_str("\n");
+        response_text.push('\n');
         response_text.push_str(&body);
 
         self.client
@@ -188,7 +207,10 @@ impl Backend {
 
         let temp_dir = std::env::temp_dir();
         let file_path = temp_dir.join("zed_restclient_response.http");
-        tokio::fs::write(&file_path, response_text).await?;
+        if let Err(e) = tokio::fs::write(&file_path, &response_text).await {
+            self.client.log_message(MessageType::ERROR, format!("Failed to write temp file: {}", e)).await;
+            return Err(e.into());
+        }
 
         if let Ok(url) = Url::from_file_path(&file_path) {
             let result = self
