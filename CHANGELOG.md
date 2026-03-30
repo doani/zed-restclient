@@ -11,4 +11,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **In-Editor Requests**: Send HTTP requests directly from `.http` or `.rest` files using integrated Code Lenses ("Send Request").
 - **Native Sidecar Backend**: A robust, Rust-based language server handles requests securely and efficiently.
 - **Variables Support**: Basic support for defining and resolving variables directly within your HTTP files.
+- **Authentication Support**: Implementation of Basic Auth (with auto-encoding) and Bearer Token support in headers.
 - **GitHub Actions**: Automated release pipeline for building and distributing the native sidecar binary for macOS (Intel/ARM), Linux, and Windows.

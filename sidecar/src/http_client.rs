@@ -1,7 +1,21 @@
 use crate::parser::HttpRequest;
+use base64::prelude::*;
 use reqwest::{Client, Method, Request};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+fn process_auth_header(value: &str) -> String {
+    if value.starts_with("Basic ") {
+        let remainder = &value[6..].trim();
+        // If it contains a space, it's likely "username password"
+        if let Some((user, pass)) = remainder.split_once(' ') {
+            let auth = format!("{}:{}", user.trim(), pass.trim());
+            let encoded = BASE64_STANDARD.encode(auth);
+            return format!("Basic {}", encoded);
+        }
+    }
+    value.to_string()
+}
 
 fn resolve_system_variables(text: &str) -> String {
     let mut resolved = text.to_string();
@@ -98,7 +112,12 @@ pub fn build_request(
 
     for (key, value) in &req.headers {
         let resolved_key = resolve_variables(key, variables);
-        let resolved_value = resolve_variables(value, variables);
+        let mut resolved_value = resolve_variables(value, variables);
+
+        if resolved_key.to_lowercase() == "authorization" {
+            resolved_value = process_auth_header(&resolved_value);
+        }
+
         request_builder = request_builder.header(resolved_key, resolved_value);
     }
 
@@ -194,5 +213,45 @@ mod tests {
         let num_str = rand_int.strip_prefix("number: ").unwrap();
         let num: i32 = num_str.parse().unwrap();
         assert!((10..=20).contains(&num));
+    }
+
+    #[test]
+    fn test_basic_auth_encoding() {
+        let client = Client::new();
+        let http_req = HttpRequest {
+            method: "GET",
+            url: "https://httpbin.org/basic-auth/user/passwd",
+            headers: vec![("Authorization", "Basic user passwd")],
+            body: None,
+        };
+
+        let reqwest_req =
+            build_request(&client, &http_req, &HashMap::new()).expect("Failed to build request");
+
+        let auth_header = reqwest_req.headers().get("Authorization").unwrap().to_str().unwrap();
+        // "user:passwd" in base64 is "dXNlcjpwYXNzd2Q="
+        assert_eq!(auth_header, "Basic dXNlcjpwYXNzd2Q=");
+    }
+
+    #[test]
+    fn test_basic_auth_with_variables() {
+        let client = Client::new();
+        let http_req = HttpRequest {
+            method: "GET",
+            url: "https://httpbin.org/basic-auth/admin/secret",
+            headers: vec![("Authorization", "Basic {{user}} {{pass}}")],
+            body: None,
+        };
+
+        let mut vars = HashMap::new();
+        vars.insert("user", "admin");
+        vars.insert("pass", "secret");
+
+        let reqwest_req =
+            build_request(&client, &http_req, &vars).expect("Failed to build request");
+
+        let auth_header = reqwest_req.headers().get("Authorization").unwrap().to_str().unwrap();
+        // "admin:secret" in base64 is "YWRtaW46c2VjcmV0"
+        assert_eq!(auth_header, "Basic YWRtaW46c2VjcmV0");
     }
 }
