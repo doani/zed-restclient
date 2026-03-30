@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 fn process_auth_header(value: &str) -> String {
-    if value.starts_with("Basic ") {
-        let remainder = &value[6..].trim();
+    if let Some(stripped) = value.strip_prefix("Basic ") {
+        let remainder = stripped.trim();
         // If it contains a space, it's likely "username password"
         if let Some((user, pass)) = remainder.split_once(' ') {
             let auth = format!("{}:{}", user.trim(), pass.trim());

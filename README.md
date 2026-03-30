@@ -11,8 +11,8 @@ This extension allows you to send HTTP requests directly from your `.http` or `.
 - [x] **HTTP Syntax Highlighting**: Full support for `.http` and `.rest` files.
 - [x] **In-Editor Requests**: Send requests directly from the editor using Code Lenses.
 - [ ] **Response Preview**: View beautiful, formatted JSON, XML, or HTML responses.
-- [ ] **Variables & Environments**: Manage dynamic data across multiple requests.
-- [ ] **Sidecar Architecture**: Leveraging a Rust-based native backend for high performance and reliability.
+- [x] **Variables & Environments**: Manage dynamic data across multiple requests.
+- [x] **Sidecar Architecture**: Leveraging a Rust-based native backend for high performance and reliability.
 
 ## 🚀 Getting Started
 
@@ -47,20 +47,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## ☕️ Support My Work
 
-**Fueling Code, Infrastructure, and Open Source ☕️💻**
+👋 Hi, I'm a passionate Software Engineer building tools for developers.
 
-Hi, I'm so glad you stopped by!
+I love bridging the gap between raw code and a finished, usable product. My main focus is on creating tools for people who enjoy software development, love optimizing their workflows, and view AI as a powerful accelerator to bring projects to life.
 
-I’ve been a professional developer since 2016. Currently, I work as a DevOps Engineer, where I'm heavily involved in shaping the future of tech through application analysis for AI Agents at **click solutions GmbH**. I love the challenge of bridging the gap between complex software and scalable infrastructure.
-
-While I love my day job, I am just now starting an exciting new chapter: building my own private and open-source projects. My current focus is **zed-restclient**—my first major project for the Zed ecosystem.
-
-Every coffee you buy or sponsorship you provide goes directly toward fueling my weekend coding sessions, covering server/hosting costs, and keeping the momentum going for tools like this.
+Every coffee you buy or sponsorship you provide goes directly toward fueling my weekend coding sessions, covering server/hosting and AI API costs, and keeping the momentum going for tools like this.
 
 - **GitHub Sponsors:** [github.com/sponsors/doani](https://github.com/sponsors/doani)
 - **Buy Me a Coffee:** [buymeacoffee.com/doani](https://buymeacoffee.com/doani)
 
-Thank you for being part of my coding journey!
+*Read more about my journey, roadmap, and philosophy on my [GitHub Sponsors](https://github.com/sponsors/doani) page!*
 
 ## 📜 License
 Distributed under the MIT License. See `LICENSE` for more information.
