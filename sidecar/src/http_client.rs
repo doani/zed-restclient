@@ -228,7 +228,12 @@ mod tests {
         let reqwest_req =
             build_request(&client, &http_req, &HashMap::new()).expect("Failed to build request");
 
-        let auth_header = reqwest_req.headers().get("Authorization").unwrap().to_str().unwrap();
+        let auth_header = reqwest_req
+            .headers()
+            .get("Authorization")
+            .unwrap()
+            .to_str()
+            .unwrap();
         // "user:passwd" in base64 is "dXNlcjpwYXNzd2Q="
         assert_eq!(auth_header, "Basic dXNlcjpwYXNzd2Q=");
     }
@@ -250,7 +255,12 @@ mod tests {
         let reqwest_req =
             build_request(&client, &http_req, &vars).expect("Failed to build request");
 
-        let auth_header = reqwest_req.headers().get("Authorization").unwrap().to_str().unwrap();
+        let auth_header = reqwest_req
+            .headers()
+            .get("Authorization")
+            .unwrap()
+            .to_str()
+            .unwrap();
         // "admin:secret" in base64 is "YWRtaW46c2VjcmV0"
         assert_eq!(auth_header, "Basic YWRtaW46c2VjcmV0");
     }
