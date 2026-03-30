@@ -37,7 +37,7 @@ impl LanguageServer for Backend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "Zed REST Client Sidecar initialized.")
+            .log_message(MessageType::INFO, "REST Client Sidecar initialized.")
             .await;
     }
 

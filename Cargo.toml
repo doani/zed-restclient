@@ -9,7 +9,7 @@ name = "zed-restclient"
 version = "0.1.0"
 edition = "2021"
 description = "A REST Client for Zed, inspired by vscode-restclient."
-authors = ["Daniel Roisch"]
+authors = ["Daniel Roisch <doani@freenet.de>"]
 
 [lib]
 crate-type = ["cdylib"]
