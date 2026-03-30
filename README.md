@@ -20,14 +20,22 @@ This extension allows you to send HTTP requests directly from your `.http` or `.
 *Instructions on how to install from the Zed Extension Store will be added here once released.*
 
 ### Usage
-Create a file ending in `.http` and write your request:
+Create a file ending in `.http` or `.rest` and write your request.
+
+**Important formatting rules for the "Send Request" button to appear:**
+1. You can separate multiple requests using `###` (optionally followed by a name/comment).
+2. **Crucial:** You must leave at least one **blank line** between the `###` separator (or the top of the file/variables) and the actual request line (e.g., `GET ...`) to allow the Code Lens to be rendered correctly!
 
 ```http
-GET https://api.github.com/repos/doani/zed-restclient
+@baseUrl = https://api.github.com
+
+### Get Repository Info
+
+GET {{baseUrl}}/repos/doani/zed-restclient
 Accept: application/json
 ```
 
-Then click the **Send Request** button (Code Lens) that appears above the request.
+Then click the **▶ Send Request** button (Code Lens) that appears directly above the `GET` line.
 
 ## 🤝 Contributing
 
