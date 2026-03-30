@@ -102,7 +102,7 @@ POST {{baseUrl}}/data
 ";
         let lines = find_request_starts(content);
         assert_eq!(lines.len(), 2);
-        
+
         // GET line (index 4 in 0-based array)
         assert_eq!(lines[0].display_line, 4);
         assert_eq!(lines[0].block_index, 0);
