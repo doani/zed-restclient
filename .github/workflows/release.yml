@@ -40,9 +40,9 @@ jobs:
       - name: Rename and move binary
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
-            mv sidecar/target/${{ matrix.target }}/release/sidecar.exe ${{ matrix.asset_name }}
+            mv target/${{ matrix.target }}/release/sidecar.exe ${{ matrix.asset_name }}
           else
-            mv sidecar/target/${{ matrix.target }}/release/sidecar ${{ matrix.asset_name }}
+            mv target/${{ matrix.target }}/release/sidecar ${{ matrix.asset_name }}
           fi
         shell: bash
 
