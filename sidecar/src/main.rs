@@ -46,11 +46,12 @@ impl LanguageServer for Backend {
         params: ExecuteCommandParams,
     ) -> Result<Option<serde_json::Value>> {
         if params.command == "zed-restclient::send_request"
-            && let Err(e) = self.handle_send_request(params.arguments).await {
-                self.client
-                    .log_message(MessageType::ERROR, format!("Error: {}", e))
-                    .await;
-            }
+            && let Err(e) = self.handle_send_request(params.arguments).await
+        {
+            self.client
+                .log_message(MessageType::ERROR, format!("Error: {}", e))
+                .await;
+        }
         Ok(None)
     }
 
@@ -164,7 +165,8 @@ impl Backend {
             .await;
 
         let http_client = reqwest::Client::new();
-        let reqwest_req = match http_client::build_request(&http_client, req, &http_file.variables) {
+        let reqwest_req = match http_client::build_request(&http_client, req, &http_file.variables)
+        {
             Ok(r) => r,
             Err(e) => {
                 let err_msg = format!("Failed to build request: {}", e);
@@ -208,7 +210,12 @@ impl Backend {
         let temp_dir = std::env::temp_dir();
         let file_path = temp_dir.join("zed_restclient_response.http");
         if let Err(e) = tokio::fs::write(&file_path, &response_text).await {
-            self.client.log_message(MessageType::ERROR, format!("Failed to write temp file: {}", e)).await;
+            self.client
+                .log_message(
+                    MessageType::ERROR,
+                    format!("Failed to write temp file: {}", e),
+                )
+                .await;
             return Err(e.into());
         }
 

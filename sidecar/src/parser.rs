@@ -78,11 +78,12 @@ pub fn parse_http_file(content: &str) -> HttpFile<'_> {
 
             // Check for file variables
             if trimmed.starts_with('@')
-                && let Some((name, value)) = trimmed.split_once('=') {
-                    // Extract variable name without the '@'
-                    variables.insert(name[1..].trim(), value.trim());
-                    continue;
-                }
+                && let Some((name, value)) = trimmed.split_once('=')
+            {
+                // Extract variable name without the '@'
+                variables.insert(name[1..].trim(), value.trim());
+                continue;
+            }
 
             // We found the request line!
             let parts: Vec<&str> = trimmed.split_whitespace().collect();
@@ -198,8 +199,14 @@ Authorization: Bearer token123
         assert_eq!(file.requests[0].method, "POST");
         assert_eq!(file.requests[0].url, "https://api.example.com/users");
         assert_eq!(file.requests[0].headers.len(), 2);
-        assert_eq!(file.requests[0].headers[0], ("Content-Type", "application/json"));
-        assert_eq!(file.requests[0].headers[1], ("Authorization", "Bearer token123"));
+        assert_eq!(
+            file.requests[0].headers[0],
+            ("Content-Type", "application/json")
+        );
+        assert_eq!(
+            file.requests[0].headers[1],
+            ("Authorization", "Bearer token123")
+        );
         assert_eq!(
             file.requests[0].body,
             Some("{\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\"\n}")
@@ -231,7 +238,10 @@ Authorization: Bearer {{token}}
         let file = parse_http_file(content);
         assert_eq!(file.requests.len(), 1);
         assert_eq!(file.variables.len(), 2);
-        assert_eq!(file.variables.get("baseUrl"), Some(&"https://api.example.com"));
+        assert_eq!(
+            file.variables.get("baseUrl"),
+            Some(&"https://api.example.com")
+        );
         assert_eq!(file.variables.get("token"), Some(&"supersecret"));
         assert_eq!(file.requests[0].url, "{{baseUrl}}/users");
     }

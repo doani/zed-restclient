@@ -55,8 +55,7 @@ impl RestClientExtension {
             .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
 
         let version_dir = format!("rest-client-{}", release.version);
-        fs::create_dir_all(&version_dir)
-            .map_err(|e| format!("failed to create directory: {e}"))?;
+        fs::create_dir_all(&version_dir).map_err(|e| format!("failed to create directory: {e}"))?;
 
         let binary_path = format!("{version_dir}/{asset_name}");
 
@@ -75,8 +74,8 @@ impl RestClientExtension {
 
             zed::make_file_executable(&binary_path)?;
 
-            let entries = fs::read_dir(".")
-                .map_err(|e| format!("failed to list working directory {e}"))?;
+            let entries =
+                fs::read_dir(".").map_err(|e| format!("failed to list working directory {e}"))?;
             for entry in entries {
                 let entry = entry.map_err(|e| format!("failed to load directory entry {e}"))?;
                 if entry.file_name().to_string_lossy() != version_dir {
