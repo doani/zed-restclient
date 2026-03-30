@@ -73,7 +73,7 @@ fn resolve_system_variables(text: &str) -> String {
 
 fn resolve_variables(text: &str, variables: &HashMap<&str, &str>) -> String {
     let mut resolved = text.to_string();
-    
+
     // 1. Resolve custom user variables from the file
     for (key, value) in variables {
         let placeholder = format!("{{{{{}}}}}", key);
@@ -129,7 +129,8 @@ mod tests {
             body: Some("{\"hello\":\"world\"}"),
         };
 
-        let reqwest_req = build_request(&client, &http_req, &HashMap::new()).expect("Failed to build request");
+        let reqwest_req =
+            build_request(&client, &http_req, &HashMap::new()).expect("Failed to build request");
 
         // Verify Method
         assert_eq!(reqwest_req.method(), Method::POST);
@@ -162,10 +163,17 @@ mod tests {
         vars.insert("userId", "123");
         vars.insert("token", "secret123");
 
-        let reqwest_req = build_request(&client, &http_req, &vars).expect("Failed to build request");
+        let reqwest_req =
+            build_request(&client, &http_req, &vars).expect("Failed to build request");
 
-        assert_eq!(reqwest_req.url().as_str(), "https://api.example.com/api/123");
-        assert_eq!(reqwest_req.headers().get("Authorization").unwrap(), "Bearer secret123");
+        assert_eq!(
+            reqwest_req.url().as_str(),
+            "https://api.example.com/api/123"
+        );
+        assert_eq!(
+            reqwest_req.headers().get("Authorization").unwrap(),
+            "Bearer secret123"
+        );
         let body_bytes = reqwest_req.body().unwrap().as_bytes().unwrap();
         assert_eq!(body_bytes, b"{\"id\":\"123\"}");
     }
@@ -173,15 +181,15 @@ mod tests {
     #[test]
     fn test_system_variables() {
         let vars = HashMap::new();
-        
+
         let guid_text = resolve_variables("id: {{$guid}}", &vars);
         assert!(guid_text.starts_with("id: "));
         assert_eq!(guid_text.len(), 4 + 36); // "id: " + 36 char UUID
-        
+
         let dt_iso = resolve_variables("time: {{$datetime iso8601}}", &vars);
         assert!(dt_iso.contains('T')); // ISO8601 has a 'T'
         assert!(dt_iso.contains('+') || dt_iso.contains('Z'));
-        
+
         let rand_int = resolve_variables("number: {{$randomInt 10 20}}", &vars);
         let num_str = rand_int.strip_prefix("number: ").unwrap();
         let num: i32 = num_str.parse().unwrap();

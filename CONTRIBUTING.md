@@ -1,4 +1,4 @@
-# Contributing to Zed REST Client
+# Contributing to REST Client
 
 First off, thank you for considering contributing to the Zed REST Client! It's people like you that make the open-source community such an amazing place to learn, inspire, and create.
 
@@ -13,10 +13,14 @@ This extension uses a **Hybrid Architecture** due to Zed's WASM sandbox constrai
 If you are modifying network logic, look at the sidecar codebase. If you are modifying UI or parsing, look at the extension codebase.
 
 ## How to Contribute
-1. **Discuss first:** If you plan to make significant changes, please open an issue first to discuss the proposed changes.
+
+**Important Rule: No Feature Without an Issue.**
+Before you start working on a new feature, improvement, or bug fix, **you must open an issue first**. This allows us to discuss the idea, align on the approach, and prevent duplicated work.
+
+1. **Discuss first:** If you plan to make significant changes or a new feature, please open an issue first to discuss the proposed changes. Do not create a feature branch without an associated issue.
 2. **Rust Standards:** We use strict Rust standards. No `unwrap()` or `expect()` in production code. Use `Result` and appropriate error handling.
 3. **Tests:** Ensure you write tests for your changes. Run `cargo test` and `cargo fmt` before submitting a PR.
-4. **Branches:** Prefix your branches appropriately (`feat/`, `fix/`, `docs/`).
+4. **Branches:** Prefix your branches appropriately and reference the issue (`feat/issue-123-AmazingFeature`, `fix/issue-124-BugFix`, `docs/`).
 
 ## Local Setup & Development
 

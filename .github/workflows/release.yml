@@ -1,0 +1,54 @@
+name: Release Sidecar
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    name: Build sidecar for ${{ matrix.os }} (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            asset_name: rest-client-sidecar-linux-x86_64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            asset_name: rest-client-sidecar-macos-aarch64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            asset_name: rest-client-sidecar-macos-x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset_name: rest-client-sidecar-windows-x86_64.exe
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build sidecar
+        run: cargo build --manifest-path sidecar/Cargo.toml --release --target ${{ matrix.target }}
+        shell: bash
+
+      - name: Rename and move binary
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            mv sidecar/target/${{ matrix.target }}/release/sidecar.exe ${{ matrix.asset_name }}
+          else
+            mv sidecar/target/${{ matrix.target }}/release/sidecar ${{ matrix.asset_name }}
+          fi
+        shell: bash
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
