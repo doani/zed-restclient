@@ -1,15 +1,15 @@
-id = "zed-restclient"
-name = "Zed REST Client"
+id = "rest-client"
+name = "REST Client"
 version = "0.1.0"
 schema_version = 1
-authors = ["Daniel Roisch"]
-description = "A REST Client for Zed, inspired by vscode-restclient."
+authors = ["Daniel Roisch <doani@freenet.de>"]
+description = "A REST Client inspired by vscode-restclient."
 repository = "https://github.com/doani/zed-restclient"
 
 [grammars.http]
 repository = "https://github.com/rest-nvim/tree-sitter-http"
 commit = "db8b4398de90b6d0b6c780aba96aaa2cd8e9202c"
 
-[language_servers.zed-restclient]
-name = "Zed REST Client Sidecar"
+[language_servers.rest-client]
+name = "REST Client Sidecar"
 language = "HTTP"
