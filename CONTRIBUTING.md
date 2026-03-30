@@ -55,4 +55,46 @@ To run and test the extension locally within the Zed Editor:
      ```
    - You should see the **▶ Send Request** Code Lens appear above the `GET` line!
    
-*Note: During active development, if you change the Rust code of the extension or the sidecar, you need to open the Extensions panel in Zed and click **Reload** on the Dev Extension to compile and apply the changes.*
+## 🚀 Publishing / Releasing to Zed
+
+When a new version of the REST Client is ready to be published to the official Zed Extension Store, follow these steps:
+
+1. **Tag and Release on GitHub:**
+   - Update the version in `extension.toml`, `Cargo.toml`, and `sidecar/Cargo.toml`.
+   - Update `CHANGELOG.md`.
+   - Merge changes into `main`.
+   - Create a new Release (e.g., `v0.1.4`) on GitHub. Wait for the GitHub Actions pipeline to finish building and attaching the sidecar binaries to the release.
+
+2. **Prepare the Zed Extensions Repository:**
+   - Fork the official [zed-industries/extensions](https://github.com/zed-industries/extensions) repository and clone your fork locally.
+   - If this is an **update**, navigate to `extensions/rest-client` and run `git pull origin main` to fetch your latest commit, OR run:
+     ```bash
+     git submodule update --remote extensions/rest-client
+     ```
+   - If this is a **new installation**, add it as a submodule:
+     ```bash
+     git submodule add https://github.com/doani/zed-restclient extensions/rest-client
+     ```
+
+3. **Update the Manifest and Format:**
+   - Open the `extensions.toml` file at the root of the `zed-industries/extensions` repository.
+   - Add/Update the entry for the `rest-client`:
+     ```toml
+     [rest-client]
+     submodule = "extensions/rest-client"
+     version = "0.1.4"
+     ```
+   - **Crucial Formatting Step:** Zed requires the extension manifests to be strictly sorted. Ensure you have `pnpm` installed globally:
+     ```bash
+     npm install -g pnpm
+     ```
+   - Run the following commands in the root of the `extensions` repository:
+     ```bash
+     pnpm install
+     pnpm sort-extensions
+     ```
+
+4. **Submit the Pull Request:**
+   - Commit your changes: `git commit -am "Update rest-client to v0.1.4"`
+   - Push to your fork: `git push origin main`
+   - Open a Pull Request against `zed-industries/extensions`.
