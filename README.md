@@ -14,6 +14,15 @@ This extension allows you to send HTTP requests directly from your `.http` or `.
 - [x] **Variables & Environments**: Manage dynamic data across multiple requests.
 - [x] **Sidecar Architecture**: Leveraging a Rust-based native backend for high performance and reliability.
 
+## 🗺️ Roadmap / Planned Features
+- **Vertical Split View**: Automatically open HTTP responses in a vertical split below the current request tab.
+- **Tab Reuse**: Reuse the same response tab for subsequent requests instead of opening new ones.
+- **Response Formatting**: JSON Pretty Printing and cleaning up unnecessary headers for a cleaner output.
+- **Advanced Configuration**: Configure responses via Zed's `settings.json` or a local `.restclient` config file.
+- **Comprehensive Documentation Website**: A dedicated, modern VitePress documentation site covering detailed usage guides, advanced workflows, and comprehensive setup instructions.
+- **Environment Support (.env)**: Support for `.env` files to manage environment-specific variables and secrets.
+- **GraphQL Support**: Native support for GraphQL queries including specific formatting and parsing.
+
 ## 🚀 Getting Started
 
 ### Installation
