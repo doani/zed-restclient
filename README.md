@@ -62,18 +62,5 @@ Before starting work on a new feature or bug fix, **please open an issue first**
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
-## ☕️ Support My Work
-
-👋 Hi, I'm a passionate Software Engineer building tools for developers.
-
-I love bridging the gap between raw code and a finished, usable product. My main focus is on creating tools for people who enjoy software development, love optimizing their workflows, and view AI as a powerful accelerator to bring projects to life.
-
-Every coffee you buy or sponsorship you provide goes directly toward fueling my weekend coding sessions, covering server/hosting and AI API costs, and keeping the momentum going for tools like this.
-
-- **GitHub Sponsors:** [github.com/sponsors/doani](https://github.com/sponsors/doani)
-- **Buy Me a Coffee:** [buymeacoffee.com/doani](https://buymeacoffee.com/doani)
-
-*Read more about my journey, roadmap, and philosophy on my [GitHub Sponsors](https://github.com/sponsors/doani) page!*
-
 ## 📜 License
 Distributed under the MIT License. See `LICENSE` for more information.
